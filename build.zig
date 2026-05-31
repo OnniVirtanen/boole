@@ -57,6 +57,13 @@ pub fn build(b: *std.Build) void {
     //
     // If neither case applies to you, feel free to delete the declaration you
     // don't need and to put everything under a single module.
+    const translate_c = b.addTranslateC(.{
+        .root_source_file = b.path("src/c.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    translate_c.linkSystemLibrary("ssh", .{});
+
     const exe = b.addExecutable(.{
         .name = "boole",
         .root_module = b.createModule(.{
@@ -79,6 +86,10 @@ pub fn build(b: *std.Build) void {
                 // can be extremely useful in case of collisions (which can happen
                 // importing modules from different packages).
                 .{ .name = "boole", .module = mod },
+                .{
+                    .name = "c",
+                    .module = translate_c.createModule(),
+                },
             },
         }),
     });

@@ -1,71 +1,44 @@
 const std = @import("std");
 const Io = std.Io;
 
+const c = @import("c");
+
 const boole = @import("boole");
 
 pub fn main(init: std.process.Init) !void {
-    // Prints to stderr, unbuffered, ignoring potential errors.
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    _ = init;
 
-    // This is appropriate for anything that lives as long as the process.
-    const arena: std.mem.Allocator = init.arena.allocator();
+    const ssh_session = c.ssh_new();
+    if (ssh_session == null) {
+        _ = c.printf("ssh session is null\n");
+    }
+    defer c.ssh_free(ssh_session);
 
-    // Accessing command line arguments:
-    const args = try init.minimal.args.toSlice(arena);
-    for (args) |arg| {
-        std.log.info("arg: {s}", .{arg});
+    // for now just hardcode ubuntu to ssh_options
+    _ = c.ssh_options_set(ssh_session, c.SSH_OPTIONS_HOST, "ubuntu");
+
+    // parse ssh config
+    if (c.ssh_options_parse_config(ssh_session, null) != 0) {
+        std.debug.print("Warning: Could not parse SSH config file\n", .{});
     }
 
-    // In order to do I/O operations need an `Io` instance.
-    const io = init.io;
+    // make a remote connection with ssh
+    const remote_connection = c.ssh_connect(ssh_session);
+    if (remote_connection != c.SSH_OK) {
+        const err_msg = c.ssh_get_error(ssh_session);
+        std.debug.print("Connection error: {s}\n", .{err_msg});
+    }
+    defer c.ssh_disconnect(ssh_session);
 
-    // Stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
-    const stdout_writer = &stdout_file_writer.interface;
+    std.debug.print("Successfully connected!\n", .{});
 
-    try boole.printAnotherMessage(stdout_writer);
+    // authenticate using public key
+    const auth_res = c.ssh_userauth_publickey_auto(ssh_session, null, null);
+    if (auth_res != c.SSH_AUTH_SUCCESS) {
+        const err_msg = c.ssh_get_error(ssh_session);
+        std.debug.print("Authentication failed: {s}\n", .{err_msg});
+        return;
+    }
 
-    try stdout_writer.flush(); // Don't forget to flush!
-}
-
-test "simple test" {
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(i32) = .empty;
-    defer list.deinit(gpa); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(gpa, 42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
-
-test "fuzz example" {
-    try std.testing.fuzz({}, testOne, .{});
-}
-
-fn testOne(context: void, smith: *std.testing.Smith) !void {
-    _ = context;
-    // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(u8) = .empty;
-    defer list.deinit(gpa);
-    while (!smith.eos()) switch (smith.value(enum { add_data, dup_data })) {
-        .add_data => {
-            const slice = try list.addManyAsSlice(gpa, smith.value(u4));
-            smith.bytes(slice);
-        },
-        .dup_data => {
-            if (list.items.len == 0) continue;
-            if (list.items.len > std.math.maxInt(u32)) return error.SkipZigTest;
-            const len = smith.valueRangeAtMost(u32, 1, @min(32, list.items.len));
-            const off = smith.valueRangeAtMost(u32, 0, @intCast(list.items.len - len));
-            try list.appendSlice(gpa, list.items[off..][0..len]);
-            try std.testing.expectEqualSlices(
-                u8,
-                list.items[off..][0..len],
-                list.items[list.items.len - len ..],
-            );
-        },
-    };
+    std.debug.print("Authentication successful! You are logged in.\n", .{});
 }
