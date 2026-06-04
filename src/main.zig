@@ -6,7 +6,6 @@ const boole = @import("boole");
 const Options = struct {
     host: ?[]const u8 = null,
     command: ?[]const u8 = null,
-    inventory: ?[]const u8 = null,
     task: ?[]const u8 = null,
 };
 
@@ -38,15 +37,15 @@ pub fn main(init: std.process.Init) !void {
     }
 
     if (options.host != null and options.command != null) {
-        try runSingleHostCommand(init.io, options.host.?, options.command.?);
-    } else if (options.inventory != null and options.task != null) {
-        try runGroupTask();
+        try runCommand(init.io, options.host.?, options.command.?);
+    } else if (options.host != null and options.task != null) {
+        try runTask();
     } else {
         std.debug.print("Error: Invalid argument combinations.\n\n", .{});
     }
 }
 
-fn runSingleHostCommand(io: anytype, host: []const u8, command: []const u8) !void {
+fn runCommand(io: std.Io, host: []const u8, command: []const u8) !void {
     std.debug.print("Connecting to host: {s}...\n", .{host});
 
     const ssh_session = c.ssh_new() orelse return error.SshInitFailed;
@@ -123,6 +122,6 @@ fn runSingleHostCommand(io: anytype, host: []const u8, command: []const u8) !voi
     _ = c.ssh_channel_send_eof(channel);
 }
 
-fn runGroupTask() !void {
+fn runTask() !void {
     return error.NotImplementedError;
 }
