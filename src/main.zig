@@ -98,6 +98,8 @@ fn runCommand(io: std.Io, host: []const u8, command: []const u8) !void {
         return error.CommandExecutionFailed;
     }
 
+    // TODO: Check if there is a possibility for a stack overflow in these fixed size buffers, maybe allocate them on the heap?
+
     var buffer: [4096]u8 = undefined;
 
     var stdout_buffer: [1024]u8 = undefined;
