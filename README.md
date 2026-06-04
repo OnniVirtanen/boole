@@ -7,7 +7,7 @@ Boole is an infrastructure configuration tool written in Zig.
 
 Boole has two major concepts.
 
-*Inventory* - Catalog of hosts to run tasks against.
+*Host* - A target server.
 
 *Task* - Logical grouping of one or more operations.
 
@@ -19,10 +19,10 @@ Run a shell command for a single host.
 boole -h debian.internal -c "chmod 755 file.txt"
 ```
 
-Run a task for a group of hosts.
+Run a task for a host.
 
 ```sh
-boole -i inventory.zig -t task.zig
+boole -h debian.internal -t task.zig
 ```
 
 ## Install
@@ -30,7 +30,7 @@ boole -i inventory.zig -t task.zig
 ### Building from source
 
 Requirements for client:
-- [Zig (0.17)](https://ziglang.org/learn/getting-started/)
+- [Zig (0.16)](https://ziglang.org/learn/getting-started/)
 - [libssh](https://www.libssh.org/)
 - Linux
 

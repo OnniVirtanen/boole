@@ -27,10 +27,6 @@ pub fn main(init: std.process.Init) !void {
             i += 1;
             if (i >= args.len) return error.MissingCommandValue;
             options.command = args[i];
-        } else if (std.mem.eql(u8, arg, "-i")) {
-            i += 1;
-            if (i >= args.len) return error.MissingInventoryValue;
-            options.inventory = args[i];
         } else if (std.mem.eql(u8, arg, "-t")) {
             i += 1;
             if (i >= args.len) return error.MissingTaskValue;
